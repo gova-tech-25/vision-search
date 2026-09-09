@@ -1,0 +1,872 @@
+FLICKR30K IMAGE RETRIEVAL
+WEEK 1 — DATA PREPROCESSING & VALIDATION
+
+Dataset:
+Flickr30k
+
+Images:
+31,783
+
+Caption rows:
+158,915
+
+Valid captions:
+158,914
+
+Empty captions:
+1
+
+Problematic image:
+2199200615.jpg
+
+Missing images:
+0
+
+Corrupted images:
+0
+
+Images with 5 captions:
+31,782
+
+Images with 4 captions:
+1
+
+OVERALL STATUS:
+VALID WITH DOCUMENTED ANOMALY
+
+Decision:
+The dataset is suitable for subsequent CLIP embedding
+generation. The original annotation file is preserved,
+and the empty caption is excluded from the usable caption
+set and documented as a dataset-quality anomaly.
+
+
+
+====================================== after all tests ran ========================================
+
+
+FLICKR30K IMAGE RETRIEVAL USING CLIP
+WEEK 1 REPORT
+DATA PREPROCESSING, DATASET INSPECTION AND VALIDATION
+
+============================================================
+
+1. WEEK 1 OBJECTIVE
+   ============================================================
+
+The primary objective of Week 1 was to prepare, inspect, validate,
+and document the Flickr30k dataset before proceeding to CLIP
+embedding generation and image retrieval.
+
+The following activities were completed:
+
+1. Configure and verify the Windows Python environment.
+2. Inspect the existing project structure and dependencies.
+3. Locate and inspect the Flickr30k dataset.
+4. Verify the number of available images.
+5. Inspect the caption annotation file.
+6. Build and validate image-caption mappings.
+7. Detect missing images.
+8. Detect corrupted or unreadable images.
+9. Detect empty caption annotations.
+10. Analyze the number of captions associated with each image.
+11. Generate and preserve deterministic Train/Validation/Test splits.
+12. Create automated dataset validation tests.
+13. Run the complete project test suite.
+14. Document all dataset-quality findings without modifying the
+    original dataset.
+
+============================================================
+2. PROJECT ENVIRONMENT
+======================
+
+Operating System:
+Windows
+
+Terminal:
+PowerShell
+
+Python launcher:
+Windows Python Launcher (py)
+
+Python version used:
+Python 3.13.1
+
+Python architecture:
+64-bit Windows
+
+Python executable:
+.venv-windows\Scripts\python.exe
+
+A separate Windows virtual environment was created because the
+existing .venv and venv directories were Linux/Unix-style
+environments containing "bin" directories rather than Windows
+"Scripts" directories.
+
+The working Windows environment was created using:
+
+```
+py -3.13 -m venv .venv-windows
+```
+
+The environment was verified using:
+
+```
+.\.venv-windows\Scripts\python.exe --version
+```
+
+Result:
+
+```
+Python 3.13.1
+```
+
+Pip was also verified successfully.
+
+============================================================
+3. EXISTING PROJECT STRUCTURE
+=============================
+
+The project was inspected before making dependency changes.
+
+Important project files identified:
+
+```
+app.py
+README.md
+requirements.txt
+```
+
+Source modules:
+
+```
+src/
+    config.py
+    dataset.py
+    embeddings.py
+    evaluation.py
+    index.py
+    model.py
+    retrieval.py
+    utils.py
+    __init__.py
+```
+
+Tests:
+
+```
+tests/
+    test_dataset_validation.py
+    test_embeddings.py
+    test_evaluation.py
+    test_retrieval.py
+    __init__.py
+```
+
+Dataset:
+
+```
+Flick 30k Dataset for Image Captioning/
+    captions.txt
+    Images/
+```
+
+Artifacts directory:
+
+```
+artifacts/
+```
+
+============================================================
+4. DEPENDENCIES
+===============
+
+The existing requirements.txt was inspected before installing
+or changing dependencies.
+
+Current declared dependencies include:
+
+```
+torch>=2.0.0
+transformers>=4.30.0
+pillow>=10.0.0
+numpy>=1.24.0
+faiss-cpu>=1.7.4
+streamlit>=1.25.0
+pandas>=2.0.0
+tqdm>=4.65.0
+pytest>=7.0.0
+python-dotenv>=1.0.0
+```
+
+No random package upgrades were performed as part of the Week 1
+dataset validation work.
+
+============================================================
+5. DATASET STRUCTURE
+====================
+
+The Flickr30k dataset was found at:
+
+```
+Flick 30k Dataset for Image Captioning/
+```
+
+It contains:
+
+```
+captions.txt
+Images/
+```
+
+The image directory contains JPEG files.
+
+The image count was independently verified using PowerShell.
+
+Command:
+
+```
+(Get-ChildItem "Flick 30k Dataset for Image Captioning\Images" `
+-File -Filter *.jpg).Count
+```
+
+Result:
+
+```
+31783
+```
+
+Therefore, the expected Flickr30k image count of 31,783 was
+confirmed.
+
+============================================================
+6. CAPTION FILE INSPECTION
+==========================
+
+The beginning of captions.txt was inspected.
+
+The file begins with:
+
+```
+image,caption
+```
+
+Example records contain image filenames and corresponding
+captions.
+
+The complete caption file was then analyzed using pandas.
+
+Command:
+
+```
+python -c "import pandas as pd; ..."
+```
+
+Result:
+
+```
+Total rows: 158915
+Empty captions: 1
+Whitespace captions: 1
+```
+
+The only empty annotation was:
+
+```
+image: 2199200615.jpg
+caption: NaN
+```
+
+Therefore, the raw caption file contains:
+
+```
+158,915 caption rows
+```
+
+but:
+
+```
+158,914 non-empty captions
+```
+
+============================================================
+7. IMAGE-CAPTION MAPPING
+========================
+
+The Flickr30kDataset class was used to construct the relationship:
+
+```
+image_id
+    |
+    +---- image_path
+    |
+    +---- captions[]
+```
+
+The dataset loader successfully detected:
+
+```
+31,783 unique valid images
+```
+
+The loader associates multiple captions with each image while
+preserving the one-to-many image-caption relationship.
+
+============================================================
+8. DATASET QUALITY VALIDATION
+=============================
+
+The dataset validation process checks:
+
+1. Total number of valid images.
+2. Total number of raw caption rows.
+3. Total number of non-empty captions.
+4. Captions per image.
+5. Missing image files.
+6. Empty captions.
+7. Images with no valid captions.
+8. Corrupted or unreadable images.
+9. Sample image-caption mapping.
+
+Final validation results:
+
+```
+Total valid images:              31,783
+Total raw caption rows:         158,915
+Total valid captions:           158,914
+
+Minimum captions/image:                 4
+Maximum captions/image:                 5
+
+Images with exactly 5 captions:    31,782
+Images with 4 captions:                 1
+
+Missing image files:                    0
+Images with no valid captions:          0
+Corrupted/unreadable images:             0
+
+Empty caption rows:                      1
+```
+
+============================================================
+9. DATASET ANOMALY INVESTIGATION
+================================
+
+During validation, one image was found to contain only four
+non-empty captions instead of five.
+
+Problematic image:
+
+```
+2199200615.jpg
+```
+
+The four valid captions are:
+
+```
+1. A dog running on green grass with its mouth open and
+   tongue hanging out.
+
+2. a white dog is running with its mouth open across the
+   grass.
+
+3. A white, black, and brown dog runs in a field.
+
+4. A dog runs across the grassy field.
+```
+
+The raw annotation file contains a fifth row for the same image,
+but the caption field is empty.
+
+Raw annotation structure:
+
+```
+2199200615.jpg, A dog running on green grass...
+2199200615.jpg, a white dog is running...
+2199200615.jpg," A white, black, and brown dog runs..."
+2199200615.jpg, A dog runs across the grassy field.
+2199200615.jpg,
+```
+
+The problematic row is:
+
+```
+Row 20001
+```
+
+============================================================
+10. IMAGE INTEGRITY INVESTIGATION
+=================================
+
+The image file was independently checked.
+
+Command:
+
+```
+Test-Path "Flick 30k Dataset for Image Captioning\Images\
+2199200615.jpg"
+```
+
+Result:
+
+```
+True
+```
+
+The image was also inspected using Pillow.
+
+Result:
+
+```
+Format: JPEG
+Size: (500, 333)
+Mode: RGB
+```
+
+Therefore, the anomaly is NOT caused by:
+
+```
+- A missing image
+- A corrupted image
+- An unsupported image format
+```
+
+The issue exists in the caption annotation itself.
+
+============================================================
+11. HANDLING OF THE EMPTY CAPTION
+=================================
+
+The original dataset was NOT modified.
+
+The empty caption was NOT replaced with an artificial caption.
+
+The image was NOT deleted.
+
+The caption was NOT duplicated.
+
+Instead, the preprocessing pipeline was modified so that empty
+captions are explicitly detected and recorded as dataset-quality
+anomalies.
+
+The following information is recorded:
+
+```
+Empty caption count
+Empty caption row number
+Corresponding image ID
+Empty caption value
+```
+
+For this dataset:
+
+```
+Empty caption count: 1
+
+Row: 20001
+Image: 2199200615.jpg
+```
+
+This allows the dataset to remain faithful to the original
+annotations while preventing empty captions from being used as
+valid textual information during later processing.
+
+============================================================
+12. DATASET VALIDATION STATUS
+=============================
+
+The final validation status is:
+
+```
+PASS WITH WARNING
+```
+
+Reason:
+
+```
+All expected images are present.
+All images are readable.
+Image-caption mappings are valid.
+The raw caption row count is correct.
+One caption annotation is empty.
+```
+
+The warning is therefore a documented dataset-quality issue
+rather than a software failure.
+
+Final interpretation:
+
+```
+The dataset is suitable for the next stage of the project,
+with the empty caption anomaly documented and excluded from
+the usable caption set.
+```
+
+============================================================
+13. DATASET SPLITS
+==================
+
+The project uses deterministic dataset splits.
+
+The configuration specifies:
+
+```
+Test split: 1,000 images
+Validation split: 1,000 images
+Remaining images: Training set
+```
+
+The split process uses a fixed random seed:
+
+```
+seed = 42
+```
+
+The split information is stored in:
+
+```
+artifacts/split_info.json
+```
+
+The split structure is:
+
+```
+train
+val
+test
+full
+```
+
+The split information is preserved to ensure reproducibility
+across later stages of the project.
+
+============================================================
+14. AUTOMATED TESTING
+=====================
+
+The original test_dataset_validation.py file did not contain
+actual pytest test functions.
+
+As a result, the initial command:
+
+```
+python tests/test_dataset_validation.py
+```
+
+worked as a script, but:
+
+```
+pytest tests/test_dataset_validation.py -v
+```
+
+initially reported:
+
+```
+collected 0 items
+```
+
+The test file was therefore converted into a proper pytest test
+suite.
+
+Dataset validation tests now cover:
+
+```
+test_dataset_image_count
+test_raw_caption_count
+test_valid_caption_count
+test_empty_caption_detection
+test_missing_images
+test_all_images_have_at_least_one_caption
+test_caption_distribution
+test_dataset_validation_status
+```
+
+All eight dataset validation tests passed.
+
+Result:
+
+```
+8 passed
+```
+
+============================================================
+15. FULL PROJECT TEST SUITE
+===========================
+
+After completing dataset validation, the entire existing test
+suite was executed.
+
+Command:
+
+```
+.\.venv-windows\Scripts\python.exe -m pytest tests -v
+```
+
+Result:
+
+```
+collected 13 items
+
+13 passed
+0 failed
+0 errors
+```
+
+Test categories included:
+
+```
+Dataset validation
+Embedding utilities
+Text embedding generation
+Evaluation metric calculations
+Cosine similarity
+FAISS Flat index
+HNSW index
+```
+
+Final result:
+
+```
+13/13 TESTS PASSED
+```
+
+Total execution time:
+
+```
+373.46 seconds
+approximately 6 minutes 13 seconds
+```
+
+The relatively long execution time is primarily associated with
+full image validation across the 31,783-image dataset.
+
+============================================================
+16. WEEK 1 IMPLEMENTATION CHANGES
+=================================
+
+The following implementation improvements were completed:
+
+1. Empty captions are now explicitly detected.
+
+2. Empty caption records are stored for reporting.
+
+3. Raw caption row count is tracked separately from valid
+   caption count.
+
+4. Dataset validation now distinguishes between:
+
+   ```
+   PASS
+   PASS WITH WARNING
+   FAIL
+   ```
+
+5. The known empty-caption anomaly is reported rather than
+   silently discarded.
+
+6. Dataset validation was converted into a proper pytest test
+   suite.
+
+7. Deterministic dataset splitting is preserved.
+
+8. The original dataset remains unchanged.
+
+============================================================
+17. CURRENT ARTIFACTS
+=====================
+
+Important project artifacts include:
+
+```
+artifacts/
+    split_info.json
+```
+
+Existing project modules include:
+
+```
+src/config.py
+src/dataset.py
+src/embeddings.py
+src/evaluation.py
+src/index.py
+src/model.py
+src/retrieval.py
+src/utils.py
+```
+
+Dataset validation tests:
+
+```
+tests/test_dataset_validation.py
+```
+
+Other existing tests:
+
+```
+tests/test_embeddings.py
+tests/test_evaluation.py
+tests/test_retrieval.py
+```
+
+============================================================
+18. DATA PREPROCESSING DECISION
+===============================
+
+The following preprocessing policy was established for the
+project:
+
+```
+1. Preserve the original Flickr30k dataset.
+2. Do not invent missing captions.
+3. Do not duplicate captions.
+4. Detect and document empty annotations.
+5. Exclude empty captions from valid caption data.
+6. Preserve valid image-caption relationships.
+7. Reject or report missing/corrupted images.
+8. Use deterministic train/validation/test splits.
+9. Maintain reproducibility.
+10. Validate the dataset before generating CLIP embeddings.
+```
+
+============================================================
+19. WEEK 1 FINAL RESULTS
+========================
+
+Dataset inspection:
+
+```
+COMPLETE
+```
+
+Dataset loading:
+
+```
+COMPLETE
+```
+
+Image validation:
+
+```
+COMPLETE
+```
+
+Caption validation:
+
+```
+COMPLETE
+```
+
+Image-caption mapping:
+
+```
+COMPLETE
+```
+
+Empty-caption detection:
+
+```
+COMPLETE
+```
+
+Missing-image detection:
+
+```
+COMPLETE
+```
+
+Corrupted-image detection:
+
+```
+COMPLETE
+```
+
+Dataset splitting:
+
+```
+COMPLETE
+```
+
+Automated testing:
+
+```
+COMPLETE
+```
+
+Full test suite:
+
+```
+13/13 PASSED
+```
+
+Dataset status:
+
+```
+PASS WITH WARNING
+```
+
+============================================================
+20. CONCLUSION
+==============
+
+Week 1 successfully established a validated and reproducible
+dataset preprocessing pipeline for the Flickr30k image retrieval
+project.
+
+A total of 31,783 images were confirmed to be present and
+readable. The raw caption annotation file contains 158,915 rows.
+Of these, 158,914 contain valid non-empty captions.
+
+One dataset-quality anomaly was identified:
+
+```
+Image: 2199200615.jpg
+Empty caption row: 20001
+```
+
+The image itself exists and is a valid JPEG image. Therefore,
+the anomaly is confirmed to be an empty caption annotation rather
+than an image-storage or image-corruption problem.
+
+The original dataset has been preserved without modification.
+The empty caption is excluded from usable caption data and
+documented for reproducibility.
+
+The complete automated test suite contains 13 tests, and all
+13 tests passed successfully.
+
+Therefore, the Week 1 dataset preprocessing and validation stage
+is considered complete.
+
+============================================================
+21. WEEK 2 READINESS
+====================
+
+The project is ready to proceed to the next stage:
+
+```
+CLIP MODEL AND IMAGE EMBEDDING GENERATION
+```
+
+The next stage should include:
+
+```
+1. Load the CLIP model.
+2. Verify the selected CLIP model configuration.
+3. Generate image embeddings for the dataset.
+4. Use batching to control memory usage.
+5. Normalize embeddings where required.
+6. Store embeddings as reproducible artifacts.
+7. Store image metadata and index mapping.
+8. Validate embedding dimensions.
+9. Check for NaN or infinite embedding values.
+10. Measure embedding-generation performance.
+11. Prepare the embeddings for FAISS/HNSW retrieval.
+```
+
+The validated dataset from Week 1 will be used as the input to
+the embedding-generation stage.
+
+============================================================
+END OF WEEK 1 REPORT
+====================

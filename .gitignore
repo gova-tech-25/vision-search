@@ -1,0 +1,50 @@
+# Python
+
+**pycache**/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+
+env/
+venv/
+ENV/
+.venv/
+.venv-windows/
+
+# Artifacts & Data
+
+artifacts/*.npy
+artifacts/*.json
+artifacts/*.index
+!artifacts/.gitkeep
+
+data/
+
+# Flickr30k / Dataset
+
+dataset/
+datasets/
+*.jpg
+*.jpeg
+*.png
+
+# IDE & OS
+
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Environment variables
+
+.env
+.env.*
+
+# Temporary / Backup files
+
+*.bak
+*.tmp
+*.swp
