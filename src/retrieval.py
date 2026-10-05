@@ -69,7 +69,7 @@ class RetrievalEngine:
         self.generator = generator or EmbeddingGenerator()
 
     def _rebase_image_paths(self):
-        # ponytail: metadata bakes absolute paths from the build machine (e.g. Windows C:\);
+        # metadata bakes absolute paths from the build machine (e.g. Windows C:\);
         # if dead, re-resolve against the local dataset dir. Proper fix is storing relative
         # paths at index time + full reindex.
         sample = Path(self.metadata[0]["image_path"])

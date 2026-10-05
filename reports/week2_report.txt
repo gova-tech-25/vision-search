@@ -1,0 +1,472 @@
+WEEK 2 REPORT
+
+PROJECT TITLE
+
+CLIP-Based Image Retrieval using HNSW and FAISS
+
+WEEK 2: HNSW RETRIEVAL PERFORMANCE BENCHMARK
+
+1. INTRODUCTION
+
+The objective of Week 2 was to develop and evaluate the vector retrieval system for the complete Flickr30k image dataset. The main focus was on generating CLIP image embeddings, building FAISS vector indexes, implementing text-to-image retrieval, and comparing approximate HNSW search with exact FlatIP search.
+
+During this week, all 31,783 images in the Flickr30k dataset were successfully processed. Each image was converted into a 512-dimensional CLIP embedding. These embeddings were normalized and indexed using two FAISS retrieval methods: FlatIP and HNSW.
+
+FlatIP was used as the exact search method and served as the ground truth for evaluating the HNSW approximate search method. The performance of HNSW was evaluated using Recall@5 for different values of the efSearch parameter.
+
+2. OBJECTIVES
+
+The main objectives of Week 2 were:
+
+1. Generate CLIP embeddings for the complete Flickr30k dataset.
+
+2. Verify the dimensions and validity of the generated embeddings.
+
+3. Apply L2 normalization to the embeddings.
+
+4. Verify the alignment between image embeddings and their corresponding metadata.
+
+5. Build an exact FAISS FlatIP index.
+
+6. Build an approximate FAISS HNSW index.
+
+7. Implement text-to-image retrieval using CLIP and FAISS.
+
+8. Generate query embeddings for multiple text queries.
+
+9. Use FlatIP results as the exact ground truth.
+
+10. Evaluate HNSW using Recall@5.
+
+11. Analyze the effect of efSearch on retrieval accuracy and search time.
+
+12. Identify a suitable HNSW configuration based on the benchmark results.
+
+13. DATASET
+
+The Flickr30k dataset was used for the experiment.
+
+The complete dataset contains 31,783 images, and all 31,783 images were successfully processed and indexed.
+
+The dataset statistics are:
+
+Total images: 31,783
+
+Images successfully indexed: 31,783
+
+Indexing success rate: 100%
+
+Embedding dimension: 512
+
+Embedding data type: float32
+
+Therefore, the complete Flickr30k dataset was successfully included in the Week 2 retrieval system.
+
+4. CLIP EMBEDDING GENERATION
+
+The project uses the pretrained CLIP model:
+
+openai/clip-vit-base-patch32
+
+CLIP is a multimodal model that maps images and text into a shared embedding space. This allows a text query and an image to be compared using their vector representations.
+
+For every image in the Flickr30k dataset, the image was passed through the CLIP image encoder to generate a 512-dimensional vector.
+
+The process can be represented as:
+
+Image → CLIP Image Encoder → 512-Dimensional Embedding
+
+After processing the complete dataset, the final embedding matrix had the following shape:
+
+(31783, 512)
+
+This means that there were 31,783 image embeddings, with each image represented by 512 numerical features.
+
+5. EMBEDDING NORMALIZATION
+
+The generated image embeddings were L2-normalized before performing similarity search.
+
+Normalization converts the embeddings into unit-length vectors. This is important because the project uses inner-product similarity for retrieval.
+
+For normalized vectors, the inner product is equivalent to cosine similarity.
+
+The relationship can be represented as:
+
+Cosine Similarity(x, y) = x · y
+
+when both x and y are normalized.
+
+Therefore, FAISS IndexFlatIP can be used to perform cosine-similarity-based image retrieval.
+
+The normalization validation was successfully completed.
+
+Result:
+
+Normalization: PASSED
+
+6. METADATA ALIGNMENT
+
+Metadata alignment was also verified during the Week 2 process.
+
+The purpose of metadata alignment is to ensure that each embedding corresponds to the correct image and metadata record.
+
+The expected relationship is:
+
+Embedding[i] ↔ Metadata[i] ↔ Image[i]
+
+Correct alignment is important because an incorrect mapping could cause the retrieval system to return the wrong image even if the similarity search itself is correct.
+
+The metadata alignment check was successfully completed.
+
+Result:
+
+Metadata Alignment: PASSED
+
+7. FAISS VECTOR INDEXING
+
+FAISS was used as the vector search library.
+
+Two different FAISS indexes were created:
+
+1. FAISS FlatIP
+2. FAISS HNSW
+
+The purpose of using two different indexes was to compare exact vector search with approximate vector search.
+
+8. FAISS FLATIP
+
+FAISS IndexFlatIP was used as the exact search index.
+
+FlatIP compares the query vector with every vector stored in the database and calculates the similarity between them.
+
+The search process can be represented as:
+
+Query
+↓
+Compare with all 31,783 image embeddings
+↓
+Calculate similarity
+↓
+Select the highest similarity vectors
+↓
+Return Top-K images
+
+Since FlatIP checks every vector, it provides exact nearest-neighbor results.
+
+Therefore, FlatIP was selected as the ground truth for evaluating the HNSW index.
+
+Result:
+
+FlatIP vectors: 31,783
+
+9. FAISS HNSW
+
+HNSW stands for Hierarchical Navigable Small World.
+
+HNSW is an approximate nearest-neighbor search algorithm. Instead of comparing the query with every vector, it uses a graph structure to efficiently navigate through promising neighboring vectors.
+
+The general search process is:
+
+Query
+↓
+Enter HNSW graph
+↓
+Explore promising neighbors
+↓
+Find nearest candidate vectors
+↓
+Return Top-K results
+
+The advantage of HNSW is that it can perform vector search efficiently on large datasets while maintaining high retrieval accuracy.
+
+Result:
+
+HNSW vectors: 31,783
+
+10. TEXT-TO-IMAGE RETRIEVAL
+
+The system supports natural-language text-to-image retrieval.
+
+A user can provide a query such as:
+
+"dog in water"
+
+or:
+
+"children playing football"
+
+The text query is converted into a CLIP text embedding.
+
+The retrieval process is:
+
+Text Query
+↓
+CLIP Text Encoder
+↓
+512-Dimensional Text Embedding
+↓
+FAISS Vector Search
+↓
+Top-K Similar Images
+
+During the Week 2 benchmark, 10 text query embeddings were generated.
+
+The query embedding matrix had the shape:
+
+(10, 512)
+
+This confirms that all 10 queries were successfully converted into 512-dimensional CLIP embeddings.
+
+11. GROUND TRUTH GENERATION
+
+To evaluate HNSW, exact search was first performed using the FlatIP index.
+
+Because FlatIP compares the query against all vectors, its results were considered the exact nearest neighbors for this experiment.
+
+The evaluation process was:
+
+Text Query
+↓
+CLIP Text Embedding
+↓
+FlatIP Search
+↓
+Exact Top-5 Results
+↓
+Ground Truth
+
+The HNSW results were then compared against these FlatIP results.
+
+This allowed the retrieval accuracy of HNSW to be measured using Recall@5.
+
+12. RECALL@5
+
+Recall@5 was used as the primary evaluation metric.
+
+Recall@5 measures how many of the true Top-5 results from the exact FlatIP search are also retrieved by HNSW.
+
+For example, suppose FlatIP returns the following Top-5 images:
+
+A, B, C, D, E
+
+and HNSW returns:
+
+A, B, C, X, Y
+
+Then three of the five correct results were retrieved.
+
+Therefore:
+
+Recall@5 = 3 / 5 = 60%
+
+In this benchmark, Recall@5 was calculated across the 10 text queries.
+
+A higher Recall@5 indicates that HNSW is producing results that are closer to the exact FlatIP results.
+
+13. HNSW PERFORMANCE BENCHMARK
+
+The main parameter evaluated during the experiment was efSearch.
+
+efSearch controls how extensively the HNSW graph is searched during a query.
+
+Different efSearch values were tested:
+
+efSearch = 16
+efSearch = 32
+efSearch = 64
+efSearch = 128
+efSearch = 256
+
+The benchmark produced the following results:
+
+At efSearch = 16:
+
+Recall@5 = 86%
+
+Average Search Time = 0.236 ms
+
+At efSearch = 32:
+
+Recall@5 = 94%
+
+Average Search Time = 0.336 ms
+
+At efSearch = 64:
+
+Recall@5 = 96%
+
+Average Search Time = 0.514 ms
+
+At efSearch = 128:
+
+Recall@5 = 100%
+
+Average Search Time = 0.994 ms
+
+At efSearch = 256:
+
+Recall@5 = 100%
+
+Average Search Time = 2.115 ms
+
+14. EFFECT OF efSearch ON RETRIEVAL ACCURACY
+
+The experiment clearly showed that increasing efSearch improved the retrieval accuracy of HNSW.
+
+The Recall@5 values changed as follows:
+
+86% → 94% → 96% → 100% → 100%
+
+for efSearch values:
+
+16 → 32 → 64 → 128 → 256
+
+At lower efSearch values, HNSW explores fewer candidate vectors. Because of this, some of the exact nearest neighbors may not be discovered.
+
+As efSearch increases, HNSW explores more candidate vectors. This increases the probability of finding the correct nearest neighbors.
+
+Therefore:
+
+Higher efSearch → More graph exploration → Higher retrieval recall
+
+15. EFFECT OF efSearch ON SEARCH TIME
+
+Increasing efSearch also increased the average search time.
+
+The measured search times were:
+
+efSearch = 16 → 0.236 ms
+
+efSearch = 32 → 0.336 ms
+
+efSearch = 64 → 0.514 ms
+
+efSearch = 128 → 0.994 ms
+
+efSearch = 256 → 2.115 ms
+
+This demonstrates that increasing search accuracy comes with an increase in search cost.
+
+The relationship can be summarized as:
+
+efSearch increases
+↓
+More candidates are explored
+↓
+Search takes more time
+↓
+Potentially better recall
+
+16. BEST TESTED CONFIGURATION
+
+The benchmark achieved 100% Recall@5 at efSearch = 128.
+
+The results were:
+
+Recall@5 = 100%
+
+Average Search Time = approximately 0.994 ms
+
+When efSearch was increased from 128 to 256, Recall@5 remained at 100%.
+
+However, the average search time increased from approximately 0.994 ms to 2.115 ms.
+
+Therefore, within the configurations tested in this benchmark, efSearch = 128 achieved the same measured Recall@5 as efSearch = 256 with a lower measured average search time.
+
+17. IMPORTANT HNSW PARAMETERS
+
+Three important HNSW parameters relevant to this project are M, efConstruction, and efSearch.
+
+17.1 M
+
+M controls the number of connections or neighbors maintained for nodes in the HNSW graph.
+
+Increasing M generally results in a more highly connected graph.
+
+A higher M can potentially improve search quality, but it also increases memory usage and index construction requirements.
+
+17.2 efConstruction
+
+efConstruction controls how extensively the graph is explored during the construction of the HNSW index.
+
+A higher efConstruction value generally requires more computation during index construction but can result in a better-quality graph.
+
+The general relationship is:
+
+Higher efConstruction
+→ More construction effort
+→ Potentially better graph quality
+→ Higher construction cost
+
+17.3 efSearch
+
+efSearch controls how extensively the HNSW graph is explored during search.
+
+This was the main parameter evaluated in the Week 2 benchmark.
+
+The general relationship is:
+
+Low efSearch
+→ Faster search
+→ Potentially lower recall
+
+High efSearch
+→ More exploration
+→ Potentially higher recall
+→ Higher search time
+
+18. OVERALL WEEK 2 RESULTS
+
+The complete Flickr30k dataset was successfully processed.
+
+A total of 31,783 out of 31,783 images were indexed.
+
+The final embedding matrix had dimensions of 31,783 × 512.
+
+All embeddings were stored as float32 vectors.
+
+Embedding normalization was successfully verified.
+
+Metadata alignment was successfully verified.
+
+The FlatIP index contained 31,783 vectors.
+
+The HNSW index contained 31,783 vectors.
+
+Text-to-image retrieval was successfully implemented.
+
+Ten text queries were converted into 512-dimensional CLIP embeddings.
+
+FlatIP was used to generate exact ground-truth results.
+
+HNSW was evaluated against the FlatIP ground truth using Recall@5.
+
+HNSW Recall@5 increased from 86% to 94%, then 96%, and finally 100% as efSearch increased from 16 to 128.
+
+At efSearch = 128, HNSW achieved 100% Recall@5 with an average search time of approximately 0.994 ms.
+
+At efSearch = 256, Recall@5 remained 100%, while the average search time increased to approximately 2.115 ms.
+
+19. CONCLUSION
+
+Week 2 successfully established and benchmarked the vector retrieval pipeline for the complete Flickr30k dataset.
+
+The complete 31,783-image dataset was converted into normalized 512-dimensional CLIP embeddings. FAISS FlatIP and HNSW indexes were then constructed successfully.
+
+FlatIP was used as the exact search baseline and ground truth, while HNSW was evaluated as the approximate nearest-neighbor search method.
+
+The benchmark demonstrated that HNSW retrieval accuracy improved as efSearch increased. Recall@5 increased from 86% at efSearch = 16 to 94% at 32, 96% at 64, and 100% at 128.
+
+At efSearch = 128, the HNSW index achieved 100% Recall@5 with an average search time of approximately 0.994 ms for the tested queries.
+
+Increasing efSearch further to 256 did not improve the measured Recall@5 because it was already 100%, but it increased the average search time to approximately 2.115 ms.
+
+Overall, the Week 2 experiment demonstrated the accuracy-latency trade-off of HNSW and showed that efSearch can be used to control the balance between retrieval accuracy and search time.
+
+The Week 2 work therefore successfully demonstrated a complete CLIP-based text-to-image retrieval pipeline using FAISS FlatIP and HNSW on the full Flickr30k dataset.
+
+20. WEEK 2 SUMMARY
+
+Week 2 successfully converted all 31,783 Flickr30k images into normalized 512-dimensional CLIP embeddings, built exact FlatIP and approximate HNSW indexes, implemented text-to-image retrieval, and benchmarked HNSW against exact FlatIP search.
+
+The experiment showed that HNSW Recall@5 increased from 86% to 100% as efSearch increased from 16 to 128. The best tested configuration achieving 100% Recall@5 was efSearch = 128, with an average search time of approximately 0.994 ms.
