@@ -208,3 +208,118 @@ class RetrievalEngine:
             },
             "results": results,
         }
+
+    def compare_backends(
+        self,
+        query: str,
+        k: int = DEFAULT_K,
+        backends: Optional[List[str]] = None,
+        ef_search: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """
+        Executes text-to-image similarity search across multiple backends
+        (e.g., 'flat' vs 'hnsw') on the same query to compare retrieval accuracy,
+        result overlap (Recall@K relative to exact ground truth), and latency.
+
+        Args:
+            query: Natural language text query.
+            k: Top-K results to retrieve.
+            backends: List of backends to evaluate (default: ['flat', 'hnsw']).
+            ef_search: Optional efSearch parameter for HNSW.
+
+        Returns:
+            Dict containing per-backend results, latency comparison, and overlap metrics.
+        """
+        if backends is None:
+            backends = ["flat", "hnsw"]
+
+        # 1. Encode text query once so both backends share exact same embedding
+        with Timer() as timer_enc:
+            text_embedding = self.generator.generate_text_embeddings(query)
+        encoding_time_ms = timer_enc.interval_ms
+
+        backend_results = {}
+        for b in backends:
+            b_lower = b.lower()
+            if b_lower not in VALID_BACKENDS:
+                continue
+
+            with Timer() as timer_search:
+                if b_lower == "hnsw":
+                    if self.hnsw_index is None:
+                        continue
+                    if ef_search is not None:
+                        self.hnsw_index.hnsw.efSearch = ef_search
+                    scores, indices = self.hnsw_index.search(text_embedding, k)
+                    top_indices = indices[0]
+                    top_scores = scores[0]
+                elif b_lower == "flat":
+                    if self.faiss_flat_index is None:
+                        continue
+                    scores, indices = self.faiss_flat_index.search(text_embedding, k)
+                    top_indices = indices[0]
+                    top_scores = scores[0]
+                else:
+                    sims = np.dot(self.embeddings, text_embedding.T).squeeze(-1)
+                    top_indices = np.argsort(-sims)[:k]
+                    top_scores = sims[top_indices]
+
+            search_time_ms = timer_search.interval_ms
+            total_time_ms = encoding_time_ms + search_time_ms
+
+            results = []
+            for rank, (idx, score) in enumerate(zip(top_indices, top_scores), start=1):
+                idx = int(idx)
+                if idx < 0 or idx >= len(self.metadata):
+                    continue
+                meta = self.metadata[idx]
+                results.append({
+                    "rank": rank,
+                    "score": float(score),
+                    "image_id": meta["image_id"],
+                    "image_path": meta["image_path"],
+                    "captions": meta.get("captions", []),
+                    "index": idx,
+                })
+            for i, r in enumerate(results, start=1):
+                r["rank"] = i
+
+            backend_results[b_lower] = {
+                "backend": b_lower,
+                "latency": {
+                    "text_encoding_ms": round(encoding_time_ms, 3),
+                    "search_ms": round(search_time_ms, 3),
+                    "total_ms": round(total_time_ms, 3),
+                },
+                "results": results,
+            }
+
+        comparison = {}
+        if "flat" in backend_results and "hnsw" in backend_results:
+            flat_ids = [r["image_id"] for r in backend_results["flat"]["results"]]
+            hnsw_ids = [r["image_id"] for r in backend_results["hnsw"]["results"]]
+            overlap_ids = set(flat_ids).intersection(set(hnsw_ids))
+            overlap_count = len(overlap_ids)
+            recall_overlap = round((overlap_count / len(flat_ids) * 100) if flat_ids else 100.0, 2)
+
+            flat_search_time = backend_results["flat"]["latency"]["search_ms"]
+            hnsw_search_time = backend_results["hnsw"]["latency"]["search_ms"]
+            speedup = round((flat_search_time / hnsw_search_time), 2) if hnsw_search_time > 0 else 1.0
+
+            comparison = {
+                "overlap_count": overlap_count,
+                "recall_overlap_pct": recall_overlap,
+                "flat_search_ms": flat_search_time,
+                "hnsw_search_ms": hnsw_search_time,
+                "hnsw_speedup_factor": speedup,
+            }
+
+        return {
+            "query": query,
+            "k": k,
+            "ef_search": ef_search or getattr(getattr(self.hnsw_index, "hnsw", None), "efSearch", HNSW_EF_SEARCH),
+            "encoding_time_ms": round(encoding_time_ms, 3),
+            "backend_results": backend_results,
+            "comparison": comparison,
+        }
+

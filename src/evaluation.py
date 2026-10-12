@@ -12,6 +12,7 @@ def evaluate_retrieval(
     max_queries: int = 1000,
     backend: str = "bruteforce",
     engine: RetrievalEngine = None,
+    ef_search: int = None,
 ) -> Dict[str, Any]:
     """
     Evaluates Text-to-Image retrieval performance on held-out dataset split.
@@ -41,8 +42,9 @@ def evaluate_retrieval(
         test_queries = test_queries[:max_queries]
 
     total_queries = len(test_queries)
+    desc_str = f"Evaluating ({backend.upper()}" + (f", efSearch={ef_search})" if backend.lower() == "hnsw" and ef_search else ")")
     print(f"\n--- Starting Quantitative Evaluation on split '{split}' ---")
-    print(f"Backend: '{backend}' | Total Queries: {total_queries} | Index Size: {engine.num_images}")
+    print(f"Backend: '{backend}' | efSearch: {ef_search or 'default'} | Total Queries: {total_queries} | Index Size: {engine.num_images}")
 
     r1_count = 0
     r5_count = 0
@@ -57,9 +59,9 @@ def evaluate_retrieval(
 
     k_max = 10
 
-    for query, target_img_id in tqdm(test_queries, desc=f"Evaluating ({backend})"):
+    for query, target_img_id in tqdm(test_queries, desc=desc_str):
         # Measure query retrieval
-        res = engine.search(query, k=k_max, backend=backend)
+        res = engine.search(query, k=k_max, backend=backend, ef_search=ef_search)
 
         encoding_times.append(res["latency"]["text_encoding_ms"])
         search_times.append(res["latency"]["search_ms"])
@@ -131,6 +133,8 @@ if __name__ == "__main__":
     parser.add_argument("--max-queries", type=int, default=1000, help="Maximum number of test queries")
     parser.add_argument("--backend", type=str, default="bruteforce",
                         help="Backend to evaluate: bruteforce, flat, or hnsw")
+    parser.add_argument("--ef-search", type=int, default=None,
+                        help="efSearch parameter for HNSW approximate search")
     parser.add_argument("--compare", action="store_true",
                         help="Compare all available backends (Brute Force, FlatIP, HNSW)")
     args = parser.parse_args()
@@ -147,13 +151,14 @@ if __name__ == "__main__":
         for be in backends:
             m = evaluate_retrieval(
                 split=args.split, max_queries=args.max_queries,
-                backend=be, engine=engine
+                backend=be, engine=engine, ef_search=args.ef_search
             )
             print_evaluation_report(m)
     else:
         metrics = evaluate_retrieval(
             split=args.split, max_queries=args.max_queries,
-            backend=args.backend, engine=engine
+            backend=args.backend, engine=engine, ef_search=args.ef_search
         )
         print_evaluation_report(metrics)
+
 

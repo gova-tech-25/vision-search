@@ -192,31 +192,41 @@ clip-image-retrieval/
 ├── requirements.txt
 ├── .gitignore
 ├── .env.example
-├── app.py                    # Streamlit web application
+├── app.py                    # Streamlit web application (Search, Comparison & Benchmark UI)
 │
 ├── data/                     # Dataset directory
 ├── artifacts/                # Generated embeddings & vector indices
 │   ├── image_embeddings.npy
 │   ├── image_metadata.json
-│   ├── faiss.index
+│   ├── faiss.index           # FAISS FlatIP (Exact search)
+│   ├── hnsw.index            # FAISS HNSW (Approximate search, Week 3)
+│   ├── hnsw_benchmark_results.csv
 │   └── split_info.json
 │
 ├── src/                       # Core system modules
 │   ├── __init__.py
-│   ├── config.py              # Global settings & env configs
+│   ├── config.py              # Global settings & env configs (HNSW params)
 │   ├── dataset.py             # Flickr30k parser & split manager
 │   ├── model.py                # CLIP model singleton loader
 │   ├── embeddings.py          # Feature extraction & L2 normalization
-│   ├── index.py                # Offline indexing & FAISS builder
-│   ├── retrieval.py            # Vector similarity search engine
+│   ├── index.py                # Offline indexing (FlatIP + HNSW builder)
+│   ├── retrieval.py            # Vector similarity search & backend comparator
 │   ├── evaluation.py          # Benchmark metrics & latency recorder
+│   ├── benchmark.py           # Week 3 HNSW parameter sweep & query evaluator
 │   └── utils.py                # Timing context managers & normalizers
+│
+├── week3/                     # Week 3 experimental analysis & reports
+│   ├── results/               # Parameter sweep & query evaluation CSVs
+│   ├── graphs/                # Modern high-res performance plots
+│   ├── week3_analysis.ipynb   # Interactive analysis notebook
+│   └── week3_hnsw_parameter_analysis.py
 │
 └── tests/                      # Unit test suite
     ├── __init__.py
     ├── test_embeddings.py
     ├── test_retrieval.py
-    └── test_evaluation.py
+    ├── test_evaluation.py
+    └── test_benchmark.py
 ```
 
 ---
@@ -233,23 +243,23 @@ Try these in the Streamlit UI:
 
 ---
 
-## 8. System Benchmarks (Brute Force vs. FAISS)
+## 8. System Benchmarks (Brute Force vs. FAISS FlatIP vs. FAISS HNSW)
 
-*Evaluated on 200 held-out Flickr30k test captions.*
+*Evaluated on held-out Flickr30k test captions with exact vs approximate search.*
 
-| Metric | Brute Force Baseline | FAISS Vector Search |
-| :--- | :---: | :---: |
-| Recall@1 | 61.00% | 61.00% |
-| Recall@5 | 82.50% | 82.50% |
-| Recall@10 | 90.00% | 90.00% |
-| Precision@5 | 16.50% | 16.50% |
-| Precision@10 | 9.00% | 9.00% |
-| Mean Reciprocal Rank (MRR) | 0.6984 | 0.6984 |
-| Avg. Text Encoding Latency | 102.24 ms | 38.35 ms |
-| Avg. Vector Search Latency | 0.66 ms | 0.35 ms |
-| **Avg. Total Latency** | **102.89 ms** | **38.70 ms** |
+| Metric | Brute Force Baseline | FAISS FlatIP (Exact) | FAISS HNSW (efSearch=64) |
+| :--- | :---: | :---: | :---: |
+| Recall@1 | 61.00% | 61.00% | 60.50% |
+| Recall@5 | 82.50% | 82.50% | 81.50% |
+| Recall@10 | 90.00% | 90.00% | 89.50% |
+| Precision@5 | 16.50% | 16.50% | 16.30% |
+| Precision@10 | 9.00% | 9.00% | 8.95% |
+| Mean Reciprocal Rank (MRR) | 0.6984 | 0.6984 | 0.6921 |
+| Avg. Text Encoding Latency | 102.24 ms | 38.35 ms | 38.35 ms |
+| Avg. Vector Search Latency | 0.66 ms | 0.35 ms | **0.18 ms** |
+| **Avg. Total Latency** | **102.89 ms** | **38.70 ms** | **38.53 ms** |
 
-> **Note:** FAISS achieves **~2x faster vector search** (0.35 ms vs. 0.66 ms) with **identical retrieval accuracy**, since `IndexFlatIP` computes exact inner products over normalized 512-d embeddings using SIMD-optimized C++ routines — no accuracy is traded for the speedup.
+> **Week 3 Key Takeaway:** FAISS HNSW delivers **sub-0.2ms vector search** (~2x faster than FlatIP and ~3.7x faster than brute-force) while retaining **>95% Recall@10 overlap** with exact ground truth at `efSearch=64`, scaling up to **100% exact convergence** at `efSearch >= 192`.
 
 ---
 
@@ -260,11 +270,12 @@ Try these in the Streamlit UI:
 - **Dataset Bias** — Retrieval quality is bounded by Flickr30k's domain distribution (everyday outdoor/social scenes).
 
 ### Roadmap
-- [ ] **Approximate NN Indexing** — `IndexIVFFlat` / `IndexHNSW` for sub-linear search at scale (>1M images)
+- [x] **Approximate NN Indexing** — `IndexHNSWFlat` with extensive `efSearch` sweep and latency benchmarking *(Completed in Week 3)*
 - [ ] **CLIP Fine-Tuning** — Fine-tune vision/text projection layers on Flickr30k with InfoNCE contrastive loss
 - [ ] **Larger Backbones** — Support `openai/clip-vit-large-patch14` for higher visual fidelity
 - [ ] **Hybrid Retrieval** — Combine dense CLIP embeddings with sparse BM25 keyword search
 - [ ] **Batch/Async API** — REST endpoint for programmatic batch querying
+
 
 ---
 
