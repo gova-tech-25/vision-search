@@ -138,8 +138,8 @@ Backed by Hugging Face's implementation of `openai/clip-vit-base-patch32`:
 ### Step 1 — Clone & Install
 
 ```bash
-git clone https://github.com/<your-username>/clip-image-retrieval.git
-cd clip-image-retrieval
+git clone https://github.com/gova-tech-25/vision-search.git
+cd vision-search
 pip install -r requirements.txt
 ```
 
@@ -186,7 +186,7 @@ streamlit run app.py
 ## 6. Project Structure
 
 ```text
-clip-image-retrieval/
+vision-search/
 │
 ├── README.md
 ├── requirements.txt
