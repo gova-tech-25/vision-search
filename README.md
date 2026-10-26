@@ -235,11 +235,11 @@ vision-search/
 
 Try these in the Streamlit UI:
 
-1. *"A dog running through a grassy field"*
-2. *"A child playing in a wooden playhouse"*
-3. *"A group of people sitting at a cafe table"*
-4. *"A person skiing down a snowy mountain slope"*
-5. *"Two men working on a construction site wearing hard hats"*
+1. *"A dog running through grass"*
+2. *"Children playing outside"*
+3. *"A group of people sitting in a village"*
+4. *"A man riding a bicycle"*
+5. *"A person skiing on snow"*
 
 ---
 
@@ -263,7 +263,82 @@ Try these in the Streamlit UI:
 
 ---
 
-## 9. Limitations & Future Work
+## 9. Week 3 HNSW Parameter Analysis
+
+### Performance Optimization
+The Week 3 project completed a comprehensive HNSW parameter sweep with **15 different efSearch values** (16-256) on the same 31,783-image corpus.
+
+**Key Results:**
+- **Best Performance:** efSearch=192 achieved **100% Recall@10** with **0.97ms average search time**
+- **Recommended Range:** efSearch=64 to 192 maintains sub-1ms search latency with >95% recall
+- **Optimal Configuration:** efSearch=192 balances speed (0.97ms) and accuracy (100% recall)
+
+**Performance Profile:**
+| efSearch | Recall@10 | Avg Search Time |
+| :--- | :---: | :---: |
+| 64 | 95.0% | 0.40 ms |
+| 96 | 98.0% | 0.48 ms |
+| **192** | **100.0%** | **0.97 ms** |
+| 256 | 100.0% | 1.77 ms |
+
+### Available Results
+- **CSV Data:** `week3/results/week3_results.csv` - Full parameter sweep results
+- **Interactive Analysis:** `week3/week3_analysis.ipynb` - Modern Python notebook with performance plots
+- **Analysis Script:** `week3/week3_hnsw_parameter_analysis.py` - Reproducible parameter analysis code
+
+### Visualization Assets
+- **efSearch vs Recall:** High-resolution plot showing Recall@10 vs efSearch with confidence bands
+- **efSearch vs Latency:** Real-time performance sweep demonstrating sub-1ms search times
+- **Recall vs Latency:** Trade-off analysis between speed and accuracy
+
+---
+
+## 10. Live Latency Comparison & Advanced Benchmarking
+
+### New Real-time Features
+Since the last README update, the system now includes advanced benchmarking capabilities:
+
+**Real-time Search Comparison:**
+- Live comparison of **HNSW (approximate)** vs **FlatIP (exact)** search performance
+- **Configurable efSearch**: Beam width tuning for balancing speed and accuracy
+- **Performance History**: Track multiple queries to identify optimal parameters
+- **Latency Measurement**: Separate text encoding vs. vector search timing
+- **Speedup Analysis**: Calculate HNSW vs. FlatIP speedup factors in real-time
+
+**New Metrics:**
+- **Median Latencies**: Robust timing over 7 repeats with 2 warm-up runs
+- **Recall@K Overlap**: Percentage of results overlapping between HNSW and exact FlatIP
+- **Execution Order Alternation**: Prevents systematic timing bias between backends
+- **Session History**: Persistent performance data across Streamlit reruns
+
+**UI Features:**
+- **Dual Tabs**: "Live Image Search" and "FlatIP vs HNSW Comparison"
+- **Real-time Charts**: Bar charts showing recent query performance history
+- **Premium Interface**: Modern dark theme with glassmorphic design
+- **Smart Hints**: Recommendations for efSearch parameter optimization
+
+### Enhanced Retrieval Engine
+The `src.retrieval.py` module now includes:
+
+**New Methods:**
+- `benchmark_index_search()`: Real-time latency benchmarking between HNSW and FlatIP
+- `compare_backends()`: Side-by-side comparison of retrieval accuracy and speed
+- `compare_search_latency()`: Dedicated performance measurement with warm-up/repeats
+
+**New Test Suite:**
+- `tests/test_latency_comparison.py`: Comprehensive unit tests for benchmarking functionality
+- Validates median calculations, recall quality, and error handling
+
+### Performance Benchmarks
+**Live Comparison Measurements (typical on 31,783 corpus):**
+- **Text Encoding:** ~38ms (CLIP ViT-B/32)
+- **FAISS FlatIP:** ~0.35ms (exact search)
+- **FAISS HNSW:** ~0.18ms (approximate search at efSearch=64)
+- **HNSW Speedup:** ~1.9x faster than exact FlatIP
+
+---
+
+## 11. Limitations & Future Work
 
 ### Limitations
 - **Fine-Grained Details** — Pretrained CLIP ViT-B/32 struggles with complex spatial relationships or exact object counts (e.g., "exactly 3 red cars").
@@ -271,6 +346,7 @@ Try these in the Streamlit UI:
 
 ### Roadmap
 - [x] **Approximate NN Indexing** — `IndexHNSWFlat` with extensive `efSearch` sweep and latency benchmarking *(Completed in Week 3)*
+- [x] **Live Latency Comparison** — Real-time HNSW vs FlatIP performance benchmarking in Streamlit UI *(Completed in Week 4)*
 - [ ] **CLIP Fine-Tuning** — Fine-tune vision/text projection layers on Flickr30k with InfoNCE contrastive loss
 - [ ] **Larger Backbones** — Support `openai/clip-vit-large-patch14` for higher visual fidelity
 - [ ] **Hybrid Retrieval** — Combine dense CLIP embeddings with sparse BM25 keyword search
